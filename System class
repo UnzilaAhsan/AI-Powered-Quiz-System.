@@ -1,0 +1,29 @@
+class System {
+    vector<Student>students;
+    vector<Admin>admins;
+    int s_ct, a_ct;
+public:
+    System() :s_ct(0), a_ct(0) {}
+    void addStudent(const Student& s)
+    {
+        students.push_back(s); s_ct++;
+    }
+    void addAdmin(const Admin& a) {
+        admins.push_back(a); a_ct++;
+    }
+    Student findStudent(int ID) {
+        for (int i = 0; i < s_ct; i++) {
+            if (students[i].getID() == ID) return students[i];
+        }
+        throw runtime_error("student not found");
+    }
+    Admin findAdmin(int id)
+    {
+        for (int i = 0; i < a_ct; i++)
+        {
+            if (admins[i].getID() == id) return admins[i];
+        }
+        throw runtime_error("admin not found");
+    }
+    ~System() {}
+};
