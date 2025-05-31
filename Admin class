@@ -1,0 +1,10 @@
+class Admin : public Person {
+public:
+    Admin(string n, int i) :Person(n, i) {}
+    string getName() const override { return name; }
+    int getID() const override { return id; }
+    ~Admin() {}
+    void deleteQuestion(const Question<string>& q, Quiz& Q) {
+        Q.deleteQuestion(q);
+    }
+};
