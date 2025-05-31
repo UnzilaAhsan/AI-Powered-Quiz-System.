@@ -1,0 +1,59 @@
+class Quiz {
+    vector<Question<string>> questions;
+    int ct;
+    string topic;
+    string difficulty;
+    string ID;
+public:
+    Quiz(string i) :ID(i),ct(0) {}
+    Quiz(string t, string d, string i) : topic(t), difficulty(d), ct(0), ID(i) {}
+    void setDifficulty(const Student& s)
+    {
+        if (s.getAvg() >= 0 && s.getAvg() <= 50) difficulty = "Easy";
+        else if (s.getAvg() > 50 && s.getAvg() <= 75) difficulty = "Medium";
+        else if (s.getAvg() > 75 && s.getAvg() <= 100) difficulty = "Hard";
+    }
+    void setTopic(string t) { topic = t; }
+    string getID() const { return ID; }
+    string getTopic() const { return topic; }
+    string getDifficulty() const { return difficulty; }
+    void addQuestion(const Question<string>& q) {
+        if (q.getDifficulty() == difficulty && q.getTopic() == topic) {
+            questions.push_back(q);
+            ct++;
+        }
+        else return;
+    }
+    float QuizFlow() { 
+        int answer = 0; int correct = 0;
+        for (int i = 0; i < ct; i++)
+        {
+            questions[i].display();
+            cin >> answer;
+            if (answer == questions[i].getIndex() + 1) { cout << "Correct!\n"; correct++; }
+            else cout << "Wrong!\n";
+        }
+        cout << "Attempted: " << ct << "\n";
+        cout << "Correct: " << correct << "\n";
+        float avg;
+
+        avg = correct / ct * 100;
+        cout << "Average score: " << avg << "%\n";
+       
+        return avg;
+    }
+    void deleteQuestion(const Question<string>& q)
+    {
+        for (int i = 0; i < ct; i++) {
+            if (questions[i] == q)
+            {
+                for (int j = i; j < ct; j++) {
+                    questions[j] = questions[j + 1];
+                }
+
+            }
+        }
+        ct--;
+    }
+    ~Quiz() {}
+};
