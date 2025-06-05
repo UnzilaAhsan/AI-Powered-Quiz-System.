@@ -1,0 +1,28 @@
+void loadQuestions(const string& filename, vector<Question<string>>& qs) {
+    ifstream fin(filename);
+    string line;
+    while (getline(fin, line)) {
+        int id, correctIndex;
+        string text, opt[4], diff, topic;
+
+        size_t pos = 0, prev = 0;
+        vector<string> parts;
+
+        while ((pos = line.find('|', prev)) != string::npos) {
+            parts.push_back(line.substr(prev, pos - prev));
+            prev = pos + 1;
+        }
+        parts.push_back(line.substr(prev)); 
+
+        if (parts.size() == 9) {
+            id = stoi(parts[0]);
+            text = parts[1];
+            for (int i = 0; i < 4; i++) opt[i] = parts[2 + i];
+            correctIndex = stoi(parts[6]);
+            diff = parts[7];
+            topic = parts[8];
+            qs.push_back(Question<string>(text, opt, correctIndex, diff, topic, id));
+        }
+    }
+    fin.close();
+}
