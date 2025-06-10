@@ -1,0 +1,70 @@
+class Admin : public Person {
+public:
+    Admin(string n, int i) : Person(n, i) {}
+    string getName() const override { return name; }
+    int getID() const override { return id; }
+
+    void deleteQuestion(const Question<string>& q, Quiz& Q, vector<Question<string>>& questions) {
+        Q.deleteQuestion(q);
+        for (int i = 0; i < questions.size(); i++) {
+            if (questions[i] == q) {
+                questions.erase(questions.begin() + i);
+                break;
+            }
+        }
+
+        ofstream fout("quiz_questions.txt");
+
+        for (int i = 0; i < questions.size(); i++) {
+            fout << questions[i].getID() << '|'
+                << questions[i].getText() << '|';
+
+            const string* opts = questions[i].getOptions();
+            for (int j = 0; j < 4; j++) {
+                fout << opts[j] << '|';
+            }
+
+            fout << questions[i].getIndex() << '|'
+                << questions[i].getDifficulty() << '|'
+                << questions[i].getTopic() << '\n';
+        }
+
+        fout.close();
+
+    }
+
+    void addQuestion(vector<Question<string>>& questions) {
+        int id, correct;
+        string text, opt[4], diff, topic;
+
+        cout << "Enter Question ID: ";
+        cin >> id;
+        cin.ignore();
+        cout << "Enter question text: ";
+        getline(cin, text);
+        for (int i = 0; i < 4; i++) {
+            cout << "Enter option " << i + 1 << ": ";
+            getline(cin, opt[i]);
+        }
+        cout << "Enter index of correct option (0-3): ";
+        cin >> correct;
+        cin.ignore();
+        cout << "Enter difficulty (Easy/Medium/Hard): ";
+        getline(cin, diff);
+        cout << "Enter topic: ";
+        getline(cin, topic);
+
+        Question<string> newq(text, opt, correct, diff, topic, id);
+        questions.push_back(newq);
+
+        ofstream fout("quiz_questions.txt", ios::app);
+        fout << id << '|' << text << '|';
+        for (int i = 0; i < 4; i++) fout << opt[i] << '|';
+        fout << correct << '|' << diff << '|' << topic << '\n';
+        fout.close();
+
+        cout << "Question added successfully.\n";
+    }
+
+    ~Admin() {}
+};
