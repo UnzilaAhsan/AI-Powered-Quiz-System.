@@ -1,0 +1,362 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include "MyString.h"
+#include "MyVectorr.h"
+
+using namespace std;
+
+class Person {
+protected:
+    string name;
+    int id;
+public:
+    Person(string n, int i) : name(n), id(i) {}
+    virtual string getName() const = 0;
+    virtual int getID() const = 0;
+    virtual ~Person() {}
+};
+
+class Student : public Person {
+    float previous_avg;
+public:
+    Student(string n, int i, float avg) : Person(n, i), previous_avg(avg) {}
+    string getName() const override { return name; }
+    int getID() const override { return id; }
+    float getAvg() const { return previous_avg; }
+    void UpdateAvg(float avg) { previous_avg = avg; }
+    ~Student() {}
+};
+
+template <typename T>
+class Question {
+private:
+    string text;
+    T options[4];
+    int correctIndex;
+    string difficulty;
+    string topic;
+    int id;
+public:
+    Question() : text(""), correctIndex(-1), difficulty(""), topic(""), id(0) {}
+    Question(string t, T o[4], int c, string d, string to, int i)
+        : text(t), correctIndex(c), difficulty(d), topic(to), id(i) {
+        for (int i = 0; i < 4; i++) options[i] = o[i];
+    }
+    string getText() const { return text; }
+    string getTopic() const { return topic; }
+    int getID() const { return id; }
+    const T* getOptions() const { return options; }
+    int getIndex() const { return correctIndex; }
+    string getDifficulty() const { return difficulty; }
+
+    bool operator==(const Question& other) {
+        return id == other.id;
+    }
+    void display() const {
+        cout << "\n[ID: " << id << "] Q. " << text << "?\n";
+        for (int i = 0; i < 4; i++) {
+            cout << i + 1 << ". " << options[i] << ".\n";
+        }
+    }
+    ~Question() {}
+};
+
+class Quiz {
+    vector<Question<string>> questions;
+    int ct;
+    string topic;
+    string difficulty;
+    string ID;
+public:
+    Quiz(string i) : ID(i), ct(0) {}
+    Quiz(string t, string d, string i) : topic(t), difficulty(d), ct(0), ID(i) {}
+    void setDifficulty(const Student& s) {
+        if (s.getAvg() <= 50) difficulty = "Easy";
+        else if (s.getAvg() <= 75) difficulty = "Medium";
+        else difficulty = "Hard";
+    }
+    void setTopic(string t) { topic = t; }
+    string getID() const { return ID; }
+    string getTopic() const { return topic; }
+    string getDifficulty() const { return difficulty; }
+
+    void addQuestion(const Question<string>& q) {
+        if (q.getDifficulty() == difficulty && q.getTopic() == topic) {
+            questions.push_back(q);
+            ct++;
+        }
+    }
+    float QuizFlow() {
+        int answer = 0, correct = 0;
+        for (int i = 0; i < ct; i++) {
+            questions[i].display();
+            cin >> answer;
+            if (answer == questions[i].getIndex() + 1) {
+                cout << "Correct!\n";
+                correct++;
+            }
+            else {
+                cout << "Wrong!\n";
+            }
+        }
+        cout << "Attempted: " << ct << "\nCorrect: " << correct << "\n";
+        float avg = ((float)correct / ct) * 100;
+        cout << "Average score: " << avg << "%\n";
+        return avg;
+    }
+    void deleteQuestion(const Question<string>& q) {
+        for (int i = 0; i < ct; i++) {
+            if (questions[i] == q) {
+                for (int j = i; j < ct - 1; j++) {
+                    questions[j] = questions[j + 1]; 
+                }
+                ct--;  
+                break; 
+            }
+        }
+    }
+    ~Quiz() {}
+};
+class Admin : public Person {
+public:
+    Admin(string n, int i) : Person(n, i) {}
+    string getName() const override { return name; }
+    int getID() const override { return id; }
+
+    void deleteQuestion(const Question<string>& q, Quiz& Q, vector<Question<string>>& questions) {
+        Q.deleteQuestion(q);
+        for (int i = 0; i < questions.size(); i++) {
+            if (questions[i] == q) {
+                for (int j = i; j < questions.size() - 1; j++) {
+                    questions[j] = questions[j + 1];
+                }
+                questions.resize(questions.size() - 1);
+                cout << "Question deleted from file\n";
+                break;
+            }
+        }
+        ofstream fout("quiz_questions.txt");
+        for (int i = 0; i < questions.size(); i++) {
+            fout << questions[i].getID() << '|'
+                << questions[i].getText() << '|';
+            const string* opts = questions[i].getOptions();
+            for (int j = 0; j < 4; j++) {
+                fout << opts[j] << '|';
+            }
+            fout << questions[i].getIndex() << '|'
+                << questions[i].getDifficulty() << '|'
+                << questions[i].getTopic() << '\n';
+        }
+        fout.close();
+    }
+    void addQuestion(vector<Question<string>>& questions) {
+        int id, correct;
+        string text, opt[4], diff, topic;
+        cout << "Enter Question ID: ";
+        cin >> id;
+        cin.ignore();
+        cout << "Enter question text: ";
+        getline(cin, text);
+        for (int i = 0; i < 4; i++) {
+            cout << "Enter option " << i + 1 << ": ";
+            getline(cin, opt[i]);
+        }
+        cout << "Enter index of correct option (0-3): ";
+        cin >> correct;
+        cin.ignore();
+        cout << "Enter difficulty (Easy/Medium/Hard): ";
+        getline(cin, diff);
+        cout << "Enter topic: ";
+        getline(cin, topic);
+
+        Question<string> newq(text, opt, correct, diff, topic, id);
+        questions.push_back(newq);
+
+        ofstream fout("quiz_questions.txt", ios::app);
+        fout << id << '|' << text << '|';
+        for (int i = 0; i < 4; i++) fout << opt[i] << '|';
+        fout << correct << '|' << diff << '|' << topic << '\n';
+        fout.close();
+        cout << "Question added successfully.\n";
+    }
+    ~Admin() {}
+};
+class System {
+    vector<Student> students;
+    vector<Admin> admins;
+    int s_ct, a_ct;
+public:
+    System() : s_ct(0), a_ct(0) {}
+    void loadUsers(const string& filename) {
+        ifstream fin(filename);
+        string role, name;
+        int id;
+        float avg;
+
+        while (fin >> role) {
+            fin >> name >> id;
+            if (role == "Student") {
+                fin >> avg;
+                addStudent(Student(name, id, avg));
+            }
+            else if (role == "Admin") {
+                addAdmin(Admin(name, id));
+            }
+        }
+        fin.close();
+    }
+    void addStudent(const Student& s) {
+        students.push_back(s);
+        s_ct++;
+    }
+    void addAdmin(const Admin& a) {
+        admins.push_back(a);
+        a_ct++;
+    }
+    Student findStudent(int ID) {
+        for (int i = 0; i < s_ct; i++) {
+            if (students[i].getID() == ID) return students[i];
+        }
+        throw runtime_error("student not found");
+    }
+    Admin findAdmin(int id) {
+        for (int i = 0; i < a_ct; i++) {
+            if (admins[i].getID() == id) return admins[i];
+        }
+        throw runtime_error("admin not found");
+    }
+    void updateStudentAvg(int id, float newAvg) {
+        for (int i = 0; i < s_ct; i++) {
+            if (students[i].getID() == id) {
+                students[i].UpdateAvg(newAvg);
+                return;
+            }
+        }
+    }
+    ~System() {}
+};
+void loadQuestions(const string& filename, vector<Question<string>>& qs) {
+    ifstream fin(filename);
+    string line;
+    while (getline(fin, line)) {
+        int id, correctIndex;
+        string text, opt[4], diff, topic;
+        vector<string> parts;
+        string temp = "";
+        for (int i = 0; i < line.length(); i++) {
+            if (line[i] == '|') {
+                parts.push_back(temp);
+                temp = "";
+            }
+            else {
+                temp += line[i];
+            }
+        }
+        parts.push_back(temp); 
+        if (parts.size() == 9) {
+            id = stoi(parts[0]);
+            text = parts[1];
+            for (int i = 0; i < 4; i++) opt[i] = parts[2 + i];
+            correctIndex = stoi(parts[6]);
+            diff = parts[7];
+            topic = parts[8];
+            qs.push_back(Question<string>(text, opt, correctIndex, diff, topic, id));
+        }
+    }
+    fin.close();
+
+}
+
+int main() {
+    cout << "\t\t\t\t======================\n\t\t\t\tAI POWERED QUIZ SYSTEM\n\t\t\t\t======================\n\n";
+
+    System s;
+    s.loadUsers("users.txt");
+
+    vector<Question<string>> questions;
+    loadQuestions("quiz_questions.txt", questions);
+
+    int choice;
+    do {
+        cout << "\n1. Login as Student\n2. Login as Admin\n3. Exit\nChoice: ";
+        cin >> choice;
+        Quiz q("Q001");
+
+        switch (choice) {
+        case 1: {
+            int ID;
+            cout << "Enter student ID: ";
+            cin >> ID;
+            try {
+                Student student = s.findStudent(ID);
+                cout << "Hello, " << student.getName() << "\n";
+                cout << "Select Topic:\n1. Encapsulation\n2. Inheritance\n3. Polymorphism\n4. Go back\n";
+                int topic_ch;
+                cin >> topic_ch;
+                if (topic_ch == 4) break;
+
+                string topic = (topic_ch == 1 ? "Encapsulation" : topic_ch == 2 ? "Inheritance" : "Polymorphism");
+
+                cout << "Previous performance: " << student.getAvg() << "\n";
+                q.setDifficulty(student);
+                cout << "Suggested difficulty: " << q.getDifficulty() << "\n";
+                q.setTopic(topic);
+
+                for (auto& question : questions) q.addQuestion(question);
+                float newAvg = q.QuizFlow();
+                s.updateStudentAvg(ID, newAvg);
+            }
+            catch (runtime_error& e) {
+                cout << e.what() << endl;
+            }
+            break;
+        }
+
+        case 2: {
+            int ID;
+            cout << "Enter Admin ID: ";
+            cin >> ID;
+            try {
+                Admin admin = s.findAdmin(ID);
+                cout << "Hello, " << admin.getName() << "\n";
+                int ch;
+                cout << "1. Delete question\n2. Add question\n";
+                cin >> ch;
+                if (ch == 1) {
+                    int qid;
+                    cout << "Enter Question ID to delete: ";
+                    cin >> qid;
+                    Question<string> target;
+                    bool found = false;
+                    for (auto& q : questions) {
+                        if (q.getID() == qid) {
+                            target = q;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        admin.deleteQuestion(target, q, questions);
+                        cout << "Question deleted.\n";
+                    }
+                    else {
+                        cout << "Question not found.\n";
+                    }
+                }
+                else if (ch == 2) {
+                    admin.addQuestion(questions);
+                }
+            }
+            catch (runtime_error& e) {
+                cout << e.what() << endl;
+            }
+            break;
+        }
+
+        }
+    } while (choice != 3);
+
+    return 0;
+}
