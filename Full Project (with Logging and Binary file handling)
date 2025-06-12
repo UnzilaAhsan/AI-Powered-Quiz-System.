@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -32,7 +31,7 @@ public:
 class Student : public Person {
     float previous_avg;
 public:
-    Student(string n = "", int i = 0, float avg = 0) : Person(n, i), previous_avg(avg) {}
+    Student(string n, int i, float avg) : Person(n, i), previous_avg(avg) {}
     string getName() const override { return name; }
     int getID() const override { return id; }
     float getAvg() const { return previous_avg; }
@@ -55,6 +54,7 @@ public:
         : text(t), correctIndex(c), difficulty(d), topic(to), id(i) {
         for (int i = 0; i < 4; i++) options[i] = o[i];
     }
+
     string getText() const { return text; }
     string getTopic() const { return topic; }
     int getID() const { return id; }
@@ -65,6 +65,7 @@ public:
     bool operator==(const Question& other) {
         return id == other.id;
     }
+
     void display() const {
         cout << "\n[ID: " << id << "] Q. " << text << "?\n";
         for (int i = 0; i < 4; i++) {
@@ -77,15 +78,19 @@ public:
         out.write((char*)&id, sizeof(id));
         out.write((char*)&len, sizeof(len));
         out.write(text.c_str(), len);
+
         for (int i = 0; i < 4; i++) {
             len = options[i].size();
             out.write((char*)&len, sizeof(len));
             out.write(options[i].c_str(), len);
         }
+
         out.write((char*)&correctIndex, sizeof(correctIndex));
+
         len = difficulty.size();
         out.write((char*)&len, sizeof(len));
         out.write(difficulty.c_str(), len);
+
         len = topic.size();
         out.write((char*)&len, sizeof(len));
         out.write(topic.c_str(), len);
@@ -93,19 +98,27 @@ public:
 
     void readBinary(ifstream& in) {
         int len;
-        char temp[1000];
         in.read((char*)&id, sizeof(id));
+
         in.read((char*)&len, sizeof(len));
-        in.read(temp, len); temp[len] = '\0'; text = temp;
+        text.resize(len);
+        in.read(&text[0], len);
+
         for (int i = 0; i < 4; i++) {
             in.read((char*)&len, sizeof(len));
-            in.read(temp, len); temp[len] = '\0'; options[i] = temp;
+            options[i].resize(len);
+            in.read(&options[i][0], len);
         }
+
         in.read((char*)&correctIndex, sizeof(correctIndex));
+
         in.read((char*)&len, sizeof(len));
-        in.read(temp, len); temp[len] = '\0'; difficulty = temp;
+        difficulty.resize(len);
+        in.read(&difficulty[0], len);
+
         in.read((char*)&len, sizeof(len));
-        in.read(temp, len); temp[len] = '\0'; topic = temp;
+        topic.resize(len);
+        in.read(&topic[0], len);
     }
 
     ~Question() {}
@@ -136,6 +149,7 @@ public:
             ct++;
         }
     }
+
     float QuizFlow() {
         int answer = 0, correct = 0;
         for (int i = 0; i < ct; i++) {
@@ -156,6 +170,7 @@ public:
         Logger::log("Quiz Attempt: " + ID + " | Score: " + to_string(avg) + "%");
         return avg;
     }
+
     void deleteQuestion(const Question<string>& q) {
         for (int i = 0; i < ct; i++) {
             if (questions[i] == q) {
@@ -172,7 +187,7 @@ public:
 
 class Admin : public Person {
 public:
-    Admin(string n = "", int i = 0) : Person(n, i) {}
+    Admin(string n, int i) : Person(n, i) {}
     string getName() const override { return name; }
     int getID() const override { return id; }
 
@@ -188,14 +203,13 @@ public:
                 break;
             }
         }
+
         ofstream fout("quiz_questions.txt");
         for (int i = 0; i < questions.size(); i++) {
             fout << questions[i].getID() << '|'
                 << questions[i].getText() << '|';
             const string* opts = questions[i].getOptions();
-            for (int j = 0; j < 4; j++) {
-                fout << opts[j] << '|';
-            }
+            for (int j = 0; j < 4; j++) fout << opts[j] << '|';
             fout << questions[i].getIndex() << '|'
                 << questions[i].getDifficulty() << '|'
                 << questions[i].getTopic() << '\n';
@@ -292,73 +306,8 @@ public:
             }
         }
     }
-
-    void saveSystemBinary(const string& filename) {
-        ofstream out(filename, ios::binary);
-        int sz = students.size();
-        out.write((char*)&sz, sizeof(sz));
-
-        for (int i = 0; i < sz; ++i) {
-            Student s = students[i]; 
-
-            int len = s.getName().size();
-            out.write((char*)&len, sizeof(len));
-            out.write(s.getName().c_str(), len);
-
-            int id = s.getID();
-            float avg = s.getAvg();
-
-            out.write((char*)&id, sizeof(id));
-            out.write((char*)&avg, sizeof(avg));
-        }
-
-        out.close();
-    }
-
-    void loadSystemBinary(const string& filename) {
-        ifstream in(filename, ios::binary);
-        int sz;
-        in.read((char*)&sz, sizeof(sz));
-        for (int i = 0; i < sz; i++) {
-            int len, id;
-            float avg;
-            char temp[1000];
-            in.read((char*)&len, sizeof(len));
-            in.read(temp, len); temp[len] = '\0';
-            string name = temp;
-            in.read((char*)&id, sizeof(id));
-            in.read((char*)&avg, sizeof(avg));
-            addStudent(Student(name, id, avg));
-        }
-        in.close();
-    }
-
     ~System() {}
 };
-
-void saveQuestionsBinary(const vector<Question<string>>& qs, const string& filename) {
-    ofstream out(filename, ios::binary);
-    int sz = qs.size();
-    out.write((char*)&sz, sizeof(sz));
-
-    for (int i = 0; i < sz; ++i) {
-        qs[i].writeBinary(out);
-    }
-
-    out.close();
-}
-
-void loadQuestionsBinary(vector<Question<string>>& qs, const string& filename) {
-    ifstream in(filename, ios::binary);
-    int sz;
-    in.read((char*)&sz, sizeof(sz));
-    for (int i = 0; i < sz; i++) {
-        Question<string> q;
-        q.readBinary(in);
-        qs.push_back(q);
-    }
-    in.close();
-}
 
 void loadQuestions(const string& filename, vector<Question<string>>& qs) {
     ifstream fin(filename);
@@ -391,23 +340,36 @@ void loadQuestions(const string& filename, vector<Question<string>>& qs) {
     fin.close();
 }
 
+void saveQuestionsBinary(const vector<Question<string>>& qs, const string& filename) {
+    ofstream out(filename, ios::binary);
+    int sz = qs.size();
+    out.write((char*)&sz, sizeof(sz));
+    for (auto& q : qs) q.writeBinary(out);
+    out.close();
+}
+
+void loadQuestionsBinary(vector<Question<string>>& qs, const string& filename) {
+    ifstream in(filename, ios::binary);
+    if (!in) return;
+    int sz;
+    in.read((char*)&sz, sizeof(sz));
+    for (int i = 0; i < sz; i++) {
+        Question<string> q;
+        q.readBinary(in);
+        qs.push_back(q);
+    }
+    in.close();
+}
+
 int main() {
     cout << "\t\t\t\t======================\n\t\t\t\tAI POWERED QUIZ SYSTEM\n\t\t\t\t======================\n\n";
 
     System s;
-    vector<Question<string>> questions;
-    int bin;
+    s.loadUsers("users.txt");
 
-    cout << "Load data from (1) Text files or (2) Binary files? ";
-    cin >> bin;
-    if (bin == 1) {
-        s.loadUsers("users.txt");
-        loadQuestions("quiz_questions.txt", questions);
-    }
-    else {
-        s.loadSystemBinary("users.dat");
-        loadQuestionsBinary(questions, "questions.dat");
-    }
+    vector<Question<string>> questions;
+    loadQuestions("quiz_questions.txt", questions); // fallback
+    loadQuestionsBinary(questions, "questions.dat"); // optional
 
     int choice;
     do {
@@ -436,10 +398,7 @@ int main() {
                 cout << "Suggested difficulty: " << q.getDifficulty() << "\n";
                 q.setTopic(topic);
 
-                for (int i = 0; i < questions.size(); i++) {
-                    q.addQuestion(questions[i]);
-                }
-
+                for (auto& question : questions) q.addQuestion(question);
                 float newAvg = q.QuizFlow();
                 s.updateStudentAvg(ID, newAvg);
             }
@@ -466,9 +425,9 @@ int main() {
                     cin >> qid;
                     Question<string> target;
                     bool found = false;
-                    for (int i = 0; i < questions.size(); i++) {
-                        if (questions[i].getID() == qid) {
-                            target = questions[i];
+                    for (auto& q : questions) {
+                        if (q.getID() == qid) {
+                            target = q;
                             found = true;
                             break;
                         }
@@ -494,14 +453,7 @@ int main() {
         }
     } while (choice != 3);
 
-    cout << "Save data to binary files? (1-Yes, 0-No): ";
-    int save_bin;
-    cin >> save_bin;
-    if (save_bin == 1) {
-        s.saveSystemBinary("users.dat");
-        saveQuestionsBinary(questions, "questions.dat");
-        cout << "Data saved to binary files.\n";
-    }
+    saveQuestionsBinary(questions, "questions.dat");
 
     return 0;
 }
