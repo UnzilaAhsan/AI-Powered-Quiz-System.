@@ -368,9 +368,7 @@ int main() {
     s.loadUsers("users.txt");
 
     vector<Question<string>> questions;
-    loadQuestions("quiz_questions.txt", questions); // fallback
-    loadQuestionsBinary(questions, "questions.dat"); // optional
-
+    loadQuestions("quiz_questions.txt", questions); 
     int choice;
     do {
         cout << "\n1. Login as Student\n2. Login as Admin\n3. Exit\nChoice: ";
