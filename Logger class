@@ -1,0 +1,10 @@
+class Logger {
+public:
+    static void log(const string& msg) {
+        ofstream fout("log.txt", ios::app);
+        if (fout) {
+            fout << msg << endl;
+            fout.close();
+        }
+    }
+};
