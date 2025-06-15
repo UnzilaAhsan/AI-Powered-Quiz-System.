@@ -16,7 +16,6 @@ public:
         }
     }
 };
-
 class Person {
 protected:
     string name;
@@ -368,7 +367,8 @@ int main() {
     s.loadUsers("users.txt");
 
     vector<Question<string>> questions;
-    loadQuestions("quiz_questions.txt", questions); 
+    loadQuestions("quiz_questions.txt", questions);
+
     int choice;
     do {
         cout << "\n1. Login as Student\n2. Login as Admin\n3. Exit\nChoice: ";
@@ -451,7 +451,7 @@ int main() {
         }
     } while (choice != 3);
 
-    saveQuestionsBinary(questions, "questions.dat");
+    saveQuestionsBinary(questions, "questions.bin");
 
     return 0;
 }
